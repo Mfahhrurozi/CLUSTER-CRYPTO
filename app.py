@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 from joblib import load
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -32,12 +33,19 @@ if uploaded_file:
         'price_change_percentage_1y'
     ]
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df[features])
+    # --- Imputasi nilai NaN ---
+    imputer = SimpleImputer(strategy='mean')
+    X_imputed = imputer.fit_transform(df[features])
 
+    # --- Standarisasi ---
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_imputed)
+
+    # --- PCA ---
     pca = PCA(n_components=3)
     X_pca = pca.fit_transform(X_scaled)
 
+    # --- Clustering ---
     clusters = model.predict(X_pca)
     df['PCA1'] = X_pca[:, 0]
     df['PCA2'] = X_pca[:, 1]
@@ -74,7 +82,8 @@ if uploaded_file:
 
     # --- Tabel Lengkap ---
     st.subheader("📋 Data Lengkap dengan Cluster")
-    st.dataframe(df[['PCA1', 'PCA2', 'Cluster'] + ([col for col in df.columns if col not in ['PCA1', 'PCA2', 'Cluster']])], use_container_width=True)
+    ordered_cols = ['PCA1', 'PCA2', 'Cluster'] + [col for col in df.columns if col not in ['PCA1', 'PCA2', 'Cluster']]
+    st.dataframe(df[ordered_cols], use_container_width=True)
 
 else:
     st.info("Silakan upload file CSV terlebih dahulu di sidebar.")
